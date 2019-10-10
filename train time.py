@@ -1,21 +1,3 @@
-
-# coding: utf-8
-
-# In[1]:
-
-
-class Object(object):
-    pass
-
-inky_display = Object()
-inky_display.WIDTH = 212
-inky_display.HEIGHT = 104
-inky_display.RED = 155
-inky_display.WHITE = 255
-inky_display.BLACK = 0
-
-import random
-
 from PIL import Image, ImageFont, ImageDraw
 from collections import namedtuple
 import datetime
@@ -24,7 +6,11 @@ from lxml import html
 import re
 from font_fredoka_one import FredokaOne
 
-font = ImageFont.truetype(FredokaOne, 22)
+from inky import InkyPHAT
+
+inky_display = InkyPHAT("red")
+inky_display.set_border(inky_display.WHITE)
+
 
 pixel_map = [
     [0, 0],
@@ -86,16 +72,16 @@ try:
     rsp = requests.get("https://traintext.uk/kgx/rys")
     tree = html.fromstring(rsp.content)
     rys_trains = get_trains(tree)
-    
+
     rsp = requests.get("https://traintext.uk/lbg/pur")
     tree = html.fromstring(rsp.content)
     pur_trains = get_trains(tree)
-    
+
     tfl = requests.get("https://api.tfl.gov.uk/line/mode/tube/status")
     service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['hammersmith-city', 'metropolitan']}
-    
+
     tube_status = [[mapping[k],v] for k, v in service.items()]
-    
+
     img = Image.new("P", (inky_display.WIDTH, inky_display.HEIGHT), 200)
     print_trains(img, rys_trains, 0, 0)
     #===
@@ -105,8 +91,8 @@ try:
     display_txt(img, 2, msg[:-1], 'BLACK')
     #===
     print_trains(img, pur_trains, 20, 3)
-    img.save('inky.png')
-    img.show()
+    inky_display.set_image(img)
+    inky_display.show()
 except:
     img = Image.open("hello-badge.png")
     draw = ImageDraw.Draw(img)
@@ -114,8 +100,8 @@ except:
     w, h = font.getsize(message)
     x = (inky_display.WIDTH / 2) - (w / 2)
     y = 60
+    font = ImageFont.truetype(FredokaOne, 22)
     #draw.text((x, y), message, inky_display.WHITE, font)
     draw.text((x, y), message, inky_display.RED, font)
-    img.save('inky.png')
-    img.show()
-
+    inky_display.set_image(img)
+    inky_display.show()
