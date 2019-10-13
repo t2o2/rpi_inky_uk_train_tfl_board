@@ -2,6 +2,8 @@ from PIL import Image, ImageFont, ImageDraw
 from collections import namedtuple
 import datetime
 import requests
+import os
+import hashlib
 from lxml import html
 import re
 from font_fredoka_one import FredokaOne
@@ -20,6 +22,8 @@ pixel_map = [
     [0, 84]
 ]
 
+def hash(img):
+   return hashlib.md5(img.tobytes()).hexdigest()
 
 def display_txt(img, idx, message, color='BLACK'):
     draw = ImageDraw.Draw(img)
@@ -55,7 +59,7 @@ def print_trains(img, all_trains, delay, offset):
     for i, tr in enumerate(trains[:2]):
         if tr.status == 'On time':
             color = 'BLACK'
-            msg = f'{tr.depart} {tr.dest}'
+            #msg = f'{tr.depart} {tr.dest}'
             status = 'On time'
             msg = f'{tr.depart} {tr.dest[:14]:14} {status: >9}'
         else:
@@ -82,26 +86,40 @@ try:
 
     tube_status = [[mapping[k],v] for k, v in service.items()]
 
+    # Creation of new image
     img = Image.new("P", (inky_display.WIDTH, inky_display.HEIGHT), 200)
-    print_trains(img, rys_trains, 0, 0)
+    print_trains(img, rys_trains, 20, 0)
     #===
     msg = ''
     for line in tube_status:
         msg += f'|{line[0]} {severity_map[line[1]]: >9}  '
-    display_txt(img, 2, msg[:-1], 'BLACK')
+    is_good = all([x[1] == 10 for x in tube_status])
+    display_txt(img, 2, msg[:-1], 'BLACK' if is_good else 'RED')
     #===
     print_trains(img, pur_trains, 20, 3)
     inky_display.set_image(img)
-    inky_display.show()
+
+    ha_img = hash(img)
 except:
     img = Image.open("hello-badge.png")
     draw = ImageDraw.Draw(img)
     message = "Chuan Bai"
+    font = ImageFont.truetype(FredokaOne, 22)
     w, h = font.getsize(message)
     x = (inky_display.WIDTH / 2) - (w / 2)
     y = 60
-    font = ImageFont.truetype(FredokaOne, 22)
-    #draw.text((x, y), message, inky_display.WHITE, font)
     draw.text((x, y), message, inky_display.RED, font)
     inky_display.set_image(img)
+    img.save('new.png')
+
+    ha_img = hash(img)
+
+ha_last = ''
+if os.path.exists('img_hash.txt'):
+    with open('img_hash.txt', 'r') as f:
+        ha_last = f.read()
+
+if ha_last != ha_img:
+    with open('img_hash.txt', 'w') as f:
+        f.write(ha_img)
     inky_display.show()
