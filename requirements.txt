@@ -1,3 +1,4 @@
 font-fredoka-one
 inky
 lxml
+loguru
