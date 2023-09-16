@@ -68,27 +68,20 @@ def print_trains(img, all_trains, delay, offset):
             msg = f'{tr.depart} {tr.dest[:14]:14} {status: >9}'
         display_txt(img, offset+i, msg, color)
 
-mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET'}
+mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'NOR', 'central': 'CTR'}
 severity_map = {0: 'Special', 1: 'Closed', 2: 'NoServ', 3: 'NoServ', 4: 'PClose', 5: 'PClose', 6: 'Severe', 7: 'Reduced', 8: 'Bus', 9: 'Minor', 10: 'Good', 11: 'PClose', 12: 'ExitOn', 13: 'Good', 14: 'ChFreq', 15: 'Divert', 16: 'NotRun', 17: 'Issue', 18: 'NoIssu', 19: 'Info'}
 
 try:
-    #rsp = requests.get("https://traintext.uk/rys/kgx")
-    rsp = requests.get("https://traintext.uk/kgx/rys")
+    rsp = requests.get("https://traintext.uk/mog/pbr")
     tree = html.fromstring(rsp.content)
-    rys_trains = get_trains(tree)
-
-    rsp = requests.get("https://traintext.uk/lbg/pur")
-    tree = html.fromstring(rsp.content)
-    pur_trains = get_trains(tree)
+    trains = get_trains(tree)
 
     tfl = requests.get("https://api.tfl.gov.uk/line/mode/tube/status")
-    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['hammersmith-city', 'metropolitan']}
+    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['northern', 'central']}
 
     tube_status = [[mapping[k],v] for k, v in service.items()]
 
     # Creation of new image
-    img = Image.new("P", (inky_display.WIDTH, inky_display.HEIGHT), 200)
-    print_trains(img, rys_trains, 20, 0)
     #===
     msg = ''
     for line in tube_status:
@@ -96,7 +89,7 @@ try:
     is_good = all([x[1] == 10 for x in tube_status])
     display_txt(img, 2, msg[:-1], 'BLACK' if is_good else 'RED')
     #===
-    print_trains(img, pur_trains, 20, 3)
+    print_trains(img, trains, 20, 3)
     inky_display.set_image(img)
 
     ha_img = hash(img)
