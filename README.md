@@ -1,6 +1,9 @@
-# Train Display Project
+# Train & Tube Display
 
 This project fetches train schedules and displays them on an InkyPHAT screen. It also provides the status of various tube lines.
+
+![Train Time](./train.png)
+
 
 ## Features
 
