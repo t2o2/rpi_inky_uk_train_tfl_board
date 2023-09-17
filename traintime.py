@@ -1,20 +1,27 @@
-from PIL import Image, ImageFont, ImageDraw
 from collections import namedtuple
+from font_fredoka_one import FredokaOne
+from inky import InkyPHAT
+from logging.handlers import TimedRotatingFileHandler
+from loguru import logger
+from lxml import html
+from PIL import Image, ImageFont, ImageDraw
 import datetime
+import hashlib
+import logging
+import re
 import requests
 import os
-import hashlib
-from lxml import html
-import re
-from font_fredoka_one import FredokaOne
-from loguru import logger
-
-from inky import InkyPHAT
 
 inky_display = InkyPHAT("red")
 inky_display.set_border(inky_display.WHITE)
 
+# Create a timed rotating file handler
+handler = TimedRotatingFileHandler("rotated_log.log", when="midnight", interval=1, backupCount=7)
+handler.setFormatter(logging.Formatter("{time} {level} {message}", style="{"))
 
+# Add the handler to loguru
+logger.add(handler)
+        
 pixel_map = [
     [0, 0],
     [0, 21],
