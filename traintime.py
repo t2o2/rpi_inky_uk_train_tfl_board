@@ -17,7 +17,6 @@ inky_display.set_border(inky_display.WHITE)
 
 # Create a timed rotating file handler
 handler = TimedRotatingFileHandler("rotated_log.log", when="midnight", interval=1, backupCount=7)
-handler.setFormatter(logging.Formatter("{time} {level} {message}", style="{"))
 
 # Add the handler to loguru
 logger.add(handler)
@@ -30,11 +29,14 @@ pixel_map = [
     [0, 84]
 ]
 
+tube_mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'NOR', 'central': 'CTR'}
+severity_map = {0: 'Special', 1: 'Closed', 2: 'NoServ', 3: 'NoServ', 4: 'PClose', 5: 'PClose', 6: 'Severe', 7: 'Reduced', 8: 'Bus', 9: 'Minor', 10: 'Good', 11: 'PClose', 12: 'ExitOn', 13: 'Good', 14: 'ChFreq', 15: 'Divert', 16: 'NotRun', 17: 'Issue', 18: 'NoIssu', 19: 'Info'}
+
 def hash(img):
    return hashlib.md5(img.tobytes()).hexdigest()
 
 def display_txt(img, idx, message, color='BLACK'):
-    logger.info(f'display_txt msg: {message}')
+    logger.info(f'display_txt msg: {idx} {message}')
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype("UbuntuMono-Regular.ttf", 14)
     x, y = pixel_map[idx]
@@ -64,75 +66,78 @@ def get_later_trains(trains, minutes):
     return out
 
 def print_trains(img, all_trains, delay=0, idx_offset=0):
-    logger.info(f'Print trains: {all_trains}')
     trains = get_later_trains(all_trains, delay)
     for i, tr in enumerate(trains[:4]):
         if tr.status == 'On time':
             color = 'BLACK'
-            #msg = f'{tr.depart} {tr.dest}'
             status = 'On time'
             msg = f'{tr.depart} {tr.dest[:14]:14} {status: >9}'
         else:
             color = 'RED'
             status = 'Exp ' + tr.status
             msg = f'{tr.depart} {tr.dest[:14]:14} {status: >9}'
-        logger.info(f'Displaying {msg}')
-        display_txt(img, offset+i, msg, color)
+        display_txt(img, idx_offset+i, msg, color)
+
+def display_if_different(ha_img):
+    ha_last = ''
+    if os.path.exists('img_hash.txt'):
+        with open('img_hash.txt', 'r') as f:
+            ha_last = f.read()
+    
+    if ha_last != ha_img:
+        with open('img_hash.txt', 'w') as f:
+            f.write(ha_img)
+        logger.info('updating display')
+        inky_display.show()
+    else:
+        logger.info('not updating - same image')
+
+def generate_train_img():
+    rsp = requests.get("https://traintext.uk/mog/pbr")
+    tree = html.fromstring(rsp.content)
+    trains = get_trains(tree)
+    logger.info(f'trains: {trains}')
+    
+    tfl = requests.get("https://api.tfl.gov.uk/line/mode/tube/status")
+    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['northern', 'central']}
+    
+    tube_status = [[tube_mapping[k],v] for k, v in service.items()]
+    logger.info(f'tube: {tube_status}')
+    # Creation of new image
+    img = Image.new("P", (inky_display.WIDTH, inky_display.HEIGHT), 200)
+    print_trains(img, trains, delay=10, idx_offset=0)
+    #===
+    msg = ''
+    for line in tube_status:
+        msg += f'|{line[0]} {severity_map[line[1]]: >9}  '
+    is_good = all([x[1] == 10 for x in tube_status])
+    display_txt(img, 4, msg[:-1], 'BLACK' if is_good else 'RED')
+    #===
+    inky_display.set_image(img)
+    return img
+
+def generate_default_img():
+    img = Image.open("hello-badge.png")
+    draw = ImageDraw.Draw(img)
+    message = "Chuan Bai"
+    font = ImageFont.truetype(FredokaOne, 22)
+    w, h = font.getsize(message)
+    x = (inky_display.WIDTH / 2) - (w / 2)
+    y = 60
+    draw.text((x, y), message, inky_display.RED, font)
+    inky_display.set_image(img)
+    img.save('new.png')
+    return img
 
 def main():
     try:
-        mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'NOR', 'central': 'CTR'}
-        severity_map = {0: 'Special', 1: 'Closed', 2: 'NoServ', 3: 'NoServ', 4: 'PClose', 5: 'PClose', 6: 'Severe', 7: 'Reduced', 8: 'Bus', 9: 'Minor', 10: 'Good', 11: 'PClose', 12: 'ExitOn', 13: 'Good', 14: 'ChFreq', 15: 'Divert', 16: 'NotRun', 17: 'Issue', 18: 'NoIssu', 19: 'Info'}
-        
         try:
-            rsp = requests.get("https://traintext.uk/mog/pbr")
-            tree = html.fromstring(rsp.content)
-            trains = get_trains(tree)
-            logger.info(trains)
-        
-            tfl = requests.get("https://api.tfl.gov.uk/line/mode/tube/status")
-            service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['northern', 'central']}
-        
-            tube_status = [[mapping[k],v] for k, v in service.items()]
-            logger.info(tube_status)
-        
-            # Creation of new image
-            img = Image.new("P", (inky_display.WIDTH, inky_display.HEIGHT), 200)
-            print_trains(img, trains, delay=10, idx_offset=0)
-            #===
-            msg = ''
-            for line in tube_status:
-                msg += f'|{line[0]} {severity_map[line[1]]: >9}  '
-            is_good = all([x[1] == 10 for x in tube_status])
-            logger.info(f'Displaying {msg}')
-            display_txt(img, 4, msg[:-1], 'BLACK' if is_good else 'RED')
-            #===
-            inky_display.set_image(img)
-        
+            img = generate_train_img()
             ha_img = hash(img)
         except:
-            img = Image.open("hello-badge.png")
-            draw = ImageDraw.Draw(img)
-            message = "Chuan Bai"
-            font = ImageFont.truetype(FredokaOne, 22)
-            w, h = font.getsize(message)
-            x = (inky_display.WIDTH / 2) - (w / 2)
-            y = 60
-            draw.text((x, y), message, inky_display.RED, font)
-            inky_display.set_image(img)
-            img.save('new.png')
-        
+            img = generate_default_img()
             ha_img = hash(img)
-        
-        ha_last = ''
-        if os.path.exists('img_hash.txt'):
-            with open('img_hash.txt', 'r') as f:
-                ha_last = f.read()
-        
-        if ha_last != ha_img:
-            with open('img_hash.txt', 'w') as f:
-                f.write(ha_img)
-            inky_display.show()
+        display_if_different(ha_img)
     except Exception as e:
         logger.exception(e)
 
