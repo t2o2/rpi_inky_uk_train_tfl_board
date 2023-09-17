@@ -56,7 +56,7 @@ def get_later_trains(trains, minutes):
             out.append(tr)
     return out
 
-def print_trains(img, all_trains, delay, offset):
+def print_trains(img, all_trains, delay=0, idx_offset=0):
     logger.info(f'Print trains: {all_trains}')
     trains = get_later_trains(all_trains, delay)
     for i, tr in enumerate(trains[:4]):
@@ -91,7 +91,7 @@ def main():
         
             # Creation of new image
             img = Image.new("P", (inky_display.WIDTH, inky_display.HEIGHT), 200)
-            print_trains(img, trains, 0, 0)
+            print_trains(img, trains, delay=10, idx_offset=0)
             #===
             msg = ''
             for line in tube_status:
@@ -100,7 +100,6 @@ def main():
             logger.info(f'Displaying {msg}')
             display_txt(img, 4, msg[:-1], 'BLACK' if is_good else 'RED')
             #===
-            # print_trains(img, trains, 20, 3)
             inky_display.set_image(img)
         
             ha_img = hash(img)
