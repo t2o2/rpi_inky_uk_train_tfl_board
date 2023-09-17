@@ -12,13 +12,12 @@ import re
 import requests
 import os
 
+# Setup hardware
 inky_display = InkyPHAT("red")
 inky_display.set_border(inky_display.WHITE)
 
 # Create a timed rotating file handler
 handler = TimedRotatingFileHandler("rotated_log.log", when="midnight", interval=1, backupCount=7)
-
-# Add the handler to loguru
 logger.add(handler)
         
 pixel_map = [
@@ -31,6 +30,10 @@ pixel_map = [
 
 tube_mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'NOR', 'central': 'CTR'}
 severity_map = {0: 'Special', 1: 'Closed', 2: 'NoServ', 3: 'NoServ', 4: 'PClose', 5: 'PClose', 6: 'Severe', 7: 'Reduced', 8: 'Bus', 9: 'Minor', 10: 'Good', 11: 'PClose', 12: 'ExitOn', 13: 'Good', 14: 'ChFreq', 15: 'Divert', 16: 'NotRun', 17: 'Issue', 18: 'NoIssu', 19: 'Info'}
+
+# Go to https://traintext.uk/ to search
+departing_station = 'mog'
+arriving_station = 'pbr'
 
 def hash(img):
    return hashlib.md5(img.tobytes()).hexdigest()
@@ -93,7 +96,7 @@ def display_if_different(ha_img):
         logger.info('not updating - same image')
 
 def generate_train_img():
-    rsp = requests.get("https://traintext.uk/mog/pbr")
+    rsp = requests.get(f"https://traintext.uk/{departing_station}/{arriving_station}")
     tree = html.fromstring(rsp.content)
     trains = get_trains(tree)
     logger.info(f'trains: {trains}')
