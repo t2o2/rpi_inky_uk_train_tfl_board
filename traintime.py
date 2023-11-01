@@ -28,7 +28,7 @@ pixel_map = [
     [0, 84]
 ]
 
-tube_mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'NOR', 'central': 'CTR'}
+tube_mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'NOR', 'central': 'CTR', 'dlr': 'DLR'}
 severity_map = {0: 'Special', 1: 'Closed', 2: 'NoServ', 3: 'NoServ', 4: 'PClose', 5: 'PClose', 6: 'Severe', 7: 'Reduced', 8: 'Bus', 9: 'Minor', 10: 'Good', 11: 'PClose', 12: 'ExitOn', 13: 'Good', 14: 'ChFreq', 15: 'Divert', 16: 'NotRun', 17: 'Issue', 18: 'NoIssu', 19: 'Info'}
 
 # Go to https://traintext.uk/ to search
@@ -102,7 +102,11 @@ def generate_train_img():
     logger.info(f'trains: {trains}')
     
     tfl = requests.get("https://api.tfl.gov.uk/line/mode/tube/status")
-    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['northern', 'central']}
+    service_list = tfl.json()
+    dlr = requests.get("https://api.tfl.gov.uk/line/mode/dlr/status")
+    service_list += dlr.json()
+    
+    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in tfl.json() if x['id'] in ['northern', 'dlr']}
     
     tube_status = [[tube_mapping[k],v] for k, v in service.items()]
     logger.info(f'tube: {tube_status}')
