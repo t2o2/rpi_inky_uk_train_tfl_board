@@ -106,7 +106,7 @@ def generate_train_img():
     dlr = requests.get("https://api.tfl.gov.uk/line/mode/dlr/status")
     service_list += dlr.json()
     
-    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in service_list.json() if x['id'] in ['northern', 'dlr']}
+    service = {x['id']:x['lineStatuses'][0]['statusSeverity'] for x in service_list if x['id'] in ['northern', 'dlr']}
     
     tube_status = [[tube_mapping[k],v] for k, v in service.items()]
     logger.info(f'tube: {tube_status}')
