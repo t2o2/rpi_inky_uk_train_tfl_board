@@ -32,8 +32,8 @@ tube_mapping = {'hammersmith-city': 'H&C', 'metropolitan': 'MET', 'northern': 'N
 severity_map = {0: 'Special', 1: 'Closed', 2: 'NoServ', 3: 'NoServ', 4: 'PClose', 5: 'PClose', 6: 'Severe', 7: 'Reduced', 8: 'Bus', 9: 'Minor', 10: 'Good', 11: 'PClose', 12: 'ExitOn', 13: 'Good', 14: 'ChFreq', 15: 'Divert', 16: 'NotRun', 17: 'Issue', 18: 'NoIssu', 19: 'Info'}
 
 # Go to https://traintext.uk/ to search
-departing_station = 'wat'
-arriving_station = 'clj'
+departing_station = 'mog'
+arriving_station = 'pbr'
 
 def hash(img):
    return hashlib.md5(img.tobytes()).hexdigest()
